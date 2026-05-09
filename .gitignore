@@ -1,0 +1,9 @@
+.venv/
+.cph/
+.vscode/
+__pycache__/
+*.py[cod]
+
+volumes/
+
+*.exe
