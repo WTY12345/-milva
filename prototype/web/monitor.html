@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实时评测监控面板</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #667085;
+      --line: #d8dee8;
+      --accent: #1f6aa5;
+      --accent-2: #1b998b;
+      --warn: #a16207;
+      --bad: #b42318;
+      --ok: #157347;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #eef4f9 0%, var(--bg) 42%, #f9fafb 100%);
+    }
+
+    .shell {
+      width: min(1380px, calc(100vw - 32px));
+      margin: 20px auto 32px;
+      display: grid;
+      gap: 16px;
+    }
+
+    header,
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(31, 41, 55, 0.06);
+    }
+
+    header {
+      padding: 22px 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1, h2, p { margin: 0; }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+
+    .metric label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    section {
+      padding: 18px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.8fr) minmax(0, 1.2fr);
+      gap: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      height: 38px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      padding: 0 10px;
+      color: var(--ink);
+      font: inherit;
+      background: #fff;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      height: auto;
+    }
+
+    .checkline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.secondary {
+      background: #eef4f8;
+      color: var(--accent);
+      border: 1px solid #cbddea;
+    }
+
+    .status {
+      margin-top: 10px;
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .status.ok { color: var(--ok); }
+    .status.error { color: var(--bad); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 13px;
+      background: #fff;
+    }
+
+    .market-table {
+      min-width: 1320px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      line-height: 1.55;
+    }
+
+    th {
+      background: #f3f7fb;
+      color: #24445c;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #e8f3ff;
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .tag.ok {
+      background: #e9f7ef;
+      color: var(--ok);
+    }
+
+    .tag.warn {
+      background: #fff7e6;
+      color: var(--warn);
+    }
+
+    .source-link {
+      display: inline-flex;
+      margin-bottom: 4px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .muted-cell {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      min-width: 120px;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.2s ease;
+    }
+
+    @media (max-width: 980px) {
+      header,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .grid,
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(100vw - 18px, 100%); }
+      .grid,
+      .form-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 23px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>实时评测监控面板</h1>
+        <p>用于毕业设计实验部分：实时观察商品向量数据量、写入耗时、检索延迟、Recall@K、MRR@K、NDCG@K、动态更新与市场主流检索方案对比维度。</p>
+      </div>
+      <a href="/">返回检索首页</a>
+    </header>
+
+    <section>
+      <div class="grid">
+        <div class="metric">
+          <label>当前后端</label>
+          <strong id="m-backend">-</strong>
+        </div>
+        <div class="metric">
+          <label>商品总量</label>
+          <strong id="m-count">0</strong>
+        </div>
+        <div class="metric">
+          <label>平均检索延迟</label>
+          <strong id="m-search">-</strong>
+        </div>
+        <div class="metric">
+          <label>最近任务</label>
+          <strong id="m-job">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section>
+        <h2>生成商品数据</h2>
+        <p>按指定数量生成商品向量，数量范围为 100-1000000。默认先清空集合，便于做不同规模实验；生成过程会按批写入并实时刷新进度。</p>
+        <div class="form-grid">
+          <label>生成数量
+            <input id="generate-count" type="number" min="100" max="1000000" value="1000">
+          </label>
+          <label>随机种子
+            <input id="generate-seed" type="number" value="42">
+          </label>
+          <label>起始商品 ID
+            <input id="generate-id-start" type="number" min="1" value="1">
+          </label>
+          <label>批量写入大小
+            <input id="generate-batch" type="number" min="50" max="1000" value="500">
+          </label>
+        </div>
+        <label class="checkline">
+          <input id="generate-reset" type="checkbox" checked>
+          生成前清空当前集合
+        </label>
+        <div class="actions">
+          <button id="start-generate" type="button">开始生成</button>
+          <button id="quick-1000000" class="secondary" type="button">设为 1000000 条</button>
+        </div>
+        <div id="generate-status" class="status"></div>
+      </section>
+
+      <section>
+        <h2>实时运行评测</h2>
+        <p>运行后会按数据规模逐项测试插入、检索、Recall@K、MRR@K、NDCG@K、更新、删除等指标，并实时写入下方表格。</p>
+        <div class="form-grid">
+          <label>评测规模
+            <input id="bench-sizes" type="text" value="100,1000,5000,10000">
+          </label>
+          <label>每组查询次数
+            <input id="bench-queries" type="number" min="1" max="100" value="10">
+          </label>
+          <label>Top-K
+            <input id="bench-topk" type="number" min="1" max="50" value="10">
+          </label>
+          <label>随机种子
+            <input id="bench-seed" type="number" value="42">
+          </label>
+        </div>
+        <div class="actions">
+          <button id="start-benchmark" type="button">开始评测</button>
+        </div>
+        <div id="benchmark-status" class="status"></div>
+      </section>
+    </div>
+
+    <section>
+      <h2>任务进度</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>任务 ID</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>进度</th>
+              <th>处理数量</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>实时操作指标</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>操作</th>
+              <th>次数</th>
+              <th>平均耗时(ms)</th>
+              <th>最近耗时(ms)</th>
+              <th>最大耗时(ms)</th>
+              <th>最近详情</th>
+            </tr>
+          </thead>
+          <tbody id="ops-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>当前系统与市场已有系统能力对比</h2>
+      <p style="margin-bottom: 12px;">第一行是本系统运行实测值；其余行来自 Pinecone、Zilliz Cloud、Milvus、Qdrant、Weaviate、Elasticsearch/OpenSearch、pgvector、Redis Vector、Faiss 等官方能力说明。性能数值需接入同一商品数据集后再实测。</p>
+      <div class="form-grid">
+        <label>实测样本量
+          <input id="market-sample-size" type="number" min="100" max="10000" value="1000">
+        </label>
+        <label>查询次数
+          <input id="market-queries" type="number" min="1" max="100" value="20">
+        </label>
+        <label>Top-K
+          <input id="market-topk" type="number" min="1" max="50" value="10">
+        </label>
+        <label>随机种子
+          <input id="market-seed" type="number" value="42">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="start-market-benchmark" type="button">接入当前数据集实测</button>
+      </div>
+      <div id="market-status" class="status"></div>
+      <div class="table-wrap">
+        <table class="market-table">
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>类型</th>
+              <th>依据</th>
+              <th>向量 / 索引能力</th>
+              <th>过滤与混合检索</th>
+              <th>动态更新</th>
+              <th>实测 / 接入状态</th>
+              <th>适用性</th>
+            </tr>
+          </thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>评测维度说明</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>说明</th>
+              <th>采集方式</th>
+            </tr>
+          </thead>
+          <tbody id="dimension-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>最近 Benchmark 结果</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>数据规模</th>
+              <th>插入耗时(ms)</th>
+              <th>平均检索(ms)</th>
+              <th>Recall@K</th>
+              <th>MRR@K</th>
+              <th>NDCG@K</th>
+              <th>更新耗时(ms)</th>
+              <th>删除耗时(ms)</th>
+            </tr>
+          </thead>
+          <tbody id="benchmark-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || payload.message || "请求失败");
+      return payload;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function statusTag(status) {
+      const cls = status === "completed" ? "ok" : (status === "failed" ? "warn" : "");
+      return `<span class="tag ${cls}">${status || "-"}</span>`;
+    }
+
+    function fmt(value, suffix = "") {
+      if (value === undefined || value === null || value === "") return "-";
+      if (typeof value === "number") return `${Number(value).toFixed(Number.isInteger(value) ? 0 : 3)}${suffix}`;
+      return `${value}${suffix}`;
+    }
+
+    function setStatus(id, text, type = "") {
+      const el = document.getElementById(id);
+      el.className = `status ${type}`.trim();
+      el.textContent = text;
+    }
+
+    function numberList(text) {
+      return text.split(",").map(item => Number(item.trim())).filter(item => !Number.isNaN(item));
+    }
+
+    function renderJobs(jobs) {
+      const body = document.getElementById("jobs-body");
+      if (!jobs?.length) {
+        body.innerHTML = `<tr><td colspan="6">暂无任务。</td></tr>`;
+        return;
+      }
+      body.innerHTML = jobs.map(job => {
+        const percent = Math.round((job.progress || 0) * 100);
+        return `
+          <tr>
+            <td>${job.id}</td>
+            <td>${job.kind}</td>
+            <td>${statusTag(job.status)}</td>
+            <td><div class="progress"><div class="bar" style="width:${percent}%"></div></div> ${percent}%</td>
+            <td>${job.processed ?? 0}/${job.total ?? "-"}</td>
+            <td>${job.error || job.message || "-"}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderOperations(operations) {
+      const body = document.getElementById("ops-body");
+      const entries = Object.entries(operations || {});
+      if (!entries.length) {
+        body.innerHTML = `<tr><td colspan="6">暂无操作指标，执行生成、检索或评测后会自动刷新。</td></tr>`;
+        return;
+      }
+      body.innerHTML = entries.map(([name, stat]) => `
+        <tr>
+          <td><span class="tag">${name}</span></td>
+          <td>${stat.count ?? 0}</td>
+          <td>${fmt(stat.avg_ms)}</td>
+          <td>${fmt(stat.last_ms)}</td>
+          <td>${fmt(stat.max_ms)}</td>
+          <td>${JSON.stringify(stat.last || {})}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderComparison(rows) {
+      const body = document.getElementById("compare-body");
+      body.innerHTML = (rows || []).map((row, index) => `
+        <tr>
+          <td><span class="tag ${index === 0 ? "ok" : ""}">${escapeHtml(row.name)}</span></td>
+          <td>${escapeHtml(row.type)}</td>
+          <td>
+            ${row.source_url
+              ? `<a class="source-link" href="${escapeHtml(row.source_url)}" target="_blank" rel="noopener">官方文档</a>`
+              : `<span class="source-link">实时监测</span>`}
+            <span class="muted-cell">${escapeHtml(row.data_source)}</span>
+          </td>
+          <td>${escapeHtml(row.vector_support || "-")}</td>
+          <td>
+            ${escapeHtml(row.filter_support || "-")}
+            ${row.hybrid_search ? `<span class="muted-cell">${escapeHtml(row.hybrid_search)}</span>` : ""}
+          </td>
+          <td>${escapeHtml(row.dynamic_update || "-")}</td>
+          <td>${escapeHtml(row.measured_summary || `数据量 ${fmt(row.dataset_count)}；平均检索 ${fmt(row.avg_search_ms)} ms；平均写入 ${fmt(row.avg_insert_ms)} ms；Recall@K ${fmt(row.recall_at_k)}；MRR@K ${fmt(row.mrr_at_k)}；NDCG@K ${fmt(row.ndcg_at_k)}`)}</td>
+          <td>${escapeHtml(row.fit || "-")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDimensions(rows) {
+      const body = document.getElementById("dimension-body");
+      body.innerHTML = (rows || []).map(row => `
+        <tr>
+          <td><span class="tag">${row.metric}</span></td>
+          <td>${row.description}</td>
+          <td>${row.method}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderBenchmark(rows) {
+      const body = document.getElementById("benchmark-body");
+      if (!rows?.length) {
+        body.innerHTML = `<tr><td colspan="8">暂无评测结果，点击“开始评测”后会显示。</td></tr>`;
+        return;
+      }
+      body.innerHTML = rows.map(row => `
+        <tr>
+          <td>${row.dataset_size}</td>
+          <td>${fmt(row.insert_ms)}</td>
+          <td>${fmt(row.avg_search_ms)}</td>
+          <td>${fmt(row.avg_recall_at_k)}</td>
+          <td>${fmt(row.avg_mrr_at_k)}</td>
+          <td>${fmt(row.avg_ndcg_at_k)}</td>
+          <td>${fmt(row.update_ms)}</td>
+          <td>${fmt(row.delete_ms)}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function refreshMetrics() {
+      const metrics = await api("/metrics");
+      const status = metrics.status || {};
+      const search = metrics.operations?.search || {};
+      const job = metrics.current_job;
+      document.getElementById("m-backend").textContent = status.backend || "-";
+      document.getElementById("m-count").textContent = status.count ?? 0;
+      document.getElementById("m-search").textContent = search.avg_ms ? `${search.avg_ms} ms` : "-";
+      document.getElementById("m-job").textContent = job ? `${job.kind}:${job.status}` : "无";
+      renderJobs(metrics.jobs || []);
+      renderOperations(metrics.operations || {});
+      renderComparison(metrics.database_comparison || []);
+      renderDimensions(metrics.evaluation_dimensions || []);
+      renderBenchmark(metrics.last_benchmark?.rows || []);
+      if (metrics.last_market_benchmark) {
+        const market = metrics.last_market_benchmark;
+        setStatus(
+          "market-status",
+          `最近同数据集实测：总量 ${market.total_count}，样本 ${market.sample_size}，查询 ${market.queries_per_size} 次。`,
+          "ok"
+        );
+      }
+    }
+
+    document.getElementById("quick-1000000").addEventListener("click", () => {
+      document.getElementById("generate-count").value = "1000000";
+    });
+
+    document.getElementById("start-generate").addEventListener("click", async () => {
+      try {
+        const payload = {
+          count: Number(document.getElementById("generate-count").value),
+          seed: Number(document.getElementById("generate-seed").value),
+          id_start: Number(document.getElementById("generate-id-start").value),
+          batch_size: Number(document.getElementById("generate-batch").value),
+          reset_first: document.getElementById("generate-reset").checked
+        };
+        const job = await api("/jobs/generate", { method: "POST", body: JSON.stringify(payload) });
+        setStatus("generate-status", `已启动生成任务：${job.id}`, "ok");
+        await refreshMetrics();
+      } catch (error) {
+        setStatus("generate-status", error.message, "error");
+      }
+    });
+
+    document.getElementById("start-benchmark").addEventListener("click", async () => {
+      try {
+        const payload = {
+          sizes: numberList(document.getElementById("bench-sizes").value),
+          queries_per_size: Number(document.getElementById("bench-queries").value),
+          top_k: Number(document.getElementById("bench-topk").value),
+          seed: Number(document.getElementById("bench-seed").value)
+        };
+        const job = await api("/jobs/benchmark", { method: "POST", body: JSON.stringify(payload) });
+        setStatus("benchmark-status", `已启动评测任务：${job.id}`, "ok");
+        await refreshMetrics();
+      } catch (error) {
+        setStatus("benchmark-status", error.message, "error");
+      }
+    });
+
+    document.getElementById("start-market-benchmark").addEventListener("click", async () => {
+      try {
+        const payload = {
+          sample_size: Number(document.getElementById("market-sample-size").value),
+          queries_per_size: Number(document.getElementById("market-queries").value),
+          top_k: Number(document.getElementById("market-topk").value),
+          seed: Number(document.getElementById("market-seed").value)
+        };
+        const job = await api("/jobs/market-benchmark", { method: "POST", body: JSON.stringify(payload) });
+        setStatus("market-status", `已启动同数据集实测任务：${job.id}`, "ok");
+        await refreshMetrics();
+      } catch (error) {
+        setStatus("market-status", error.message, "error");
+      }
+    });
+
+    refreshMetrics().catch(error => {
+      setStatus("generate-status", error.message, "error");
+    });
+    setInterval(() => {
+      refreshMetrics().catch(() => {});
+    }, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品向量检索系统</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --ink: #20242a;
+      --muted: #667085;
+      --line: #d9dee7;
+      --soft: #f0f4f8;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --ok: #157347;
+      --bad: #b42318;
+      --warn: #a16207;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+    }
+
+    .shell {
+      width: min(1280px, calc(100vw - 32px));
+      margin: 18px auto 28px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar,
+    .panel,
+    .metric,
+    .item-card,
+    .empty {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .topbar {
+      min-height: 92px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .brand {
+      min-width: 0;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .brand-image {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    h1, h2, p { margin: 0; }
+
+    h1 {
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      font-size: 17px;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+
+    .subtle,
+    p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    a,
+    button {
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .link-button,
+    button {
+      min-height: 38px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      padding: 9px 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover { background: var(--accent-dark); }
+
+    .secondary {
+      color: #24445c;
+      background: #eef4f8;
+      border-color: #cbddea;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px 15px;
+      min-height: 78px;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+
+    .metric label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      font-size: 22px;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    label.field {
+      display: grid;
+      gap: 6px;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      padding: 9px 10px;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.16);
+      border-color: rgba(37, 99, 235, 0.55);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status,
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      min-height: 22px;
+    }
+
+    .status.ok { color: var(--ok); }
+    .status.error { color: var(--bad); }
+    .status.warn { color: var(--warn); }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .item-card {
+      padding: 13px 14px;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: #1e40af;
+      background: #e8f0ff;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .empty {
+      padding: 16px;
+      color: var(--muted);
+      background: #fbfcfe;
+      text-align: center;
+    }
+
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .system-item {
+      border: 1px solid var(--line);
+      background: #fbfcfe;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--muted);
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .system-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1080px) {
+      .layout,
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100vw - 18px, 100%);
+        margin-top: 10px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand-image {
+        width: 52px;
+        height: 52px;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .metrics,
+      .system-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-image" src="/assets/1.png" alt="系统图标">
+        <div>
+          <h1>商品向量检索系统</h1>
+          <p class="subtle">商品录入、批量生成、自然语言检索与运行状态查看。</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="link-button secondary" href="/monitor.html">实时监控</a>
+      </nav>
+    </header>
+
+    <section class="metrics" aria-label="系统概览">
+      <div class="metric">
+        <label>当前后端</label>
+        <strong id="metric-backend">-</strong>
+      </div>
+      <div class="metric">
+        <label>商品总量</label>
+        <strong id="metric-count">0</strong>
+      </div>
+      <div class="metric">
+        <label>向量维度</label>
+        <strong id="metric-dim">128</strong>
+      </div>
+      <div class="metric">
+        <label>连接状态</label>
+        <strong id="metric-health">检测中</strong>
+      </div>
+    </section>
+
+    <main class="layout">
+      <div class="stack">
+        <section class="panel">
+          <h2>商品检索</h2>
+          <form id="search-form">
+            <label class="field">查询描述
+              <textarea id="query-text" required placeholder="例如：适合通勤的降噪耳机"></textarea>
+            </label>
+
+            <div class="grid-3">
+              <label class="field">检索模式
+                <select id="search-mode">
+                  <option value="category">分类匹配</option>
+                  <option value="similar_product" selected>近似商品</option>
+                  <option value="similar_price">近似价格</option>
+                </select>
+              </label>
+              <label class="field">Top-K
+                <input id="top-k" type="number" min="1" max="50" value="6">
+              </label>
+              <label class="field">分类过滤
+                <input id="category-filter" type="text" placeholder="例如：1,2,3">
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label class="field">价格区间
+                <input id="price-range" type="text" placeholder="例如：100,999">
+              </label>
+              <label class="field">示例查询
+                <select id="search-example">
+                  <option value="">选择示例</option>
+                  <option value="适合白领通勤的降噪耳机">适合白领通勤的降噪耳机</option>
+                  <option value="Apple 办公平板">Apple 办公平板</option>
+                  <option value="500 左右的家用咖啡机">500 左右的家用咖啡机</option>
+                  <option value="适合学生的轻便背包">适合学生的轻便背包</option>
+                  <option value="穿的">穿的</option>
+                  <option value="玩的">玩的</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label class="field">生成商品数量
+                <input id="bootstrap-count" type="number" min="100" max="1000000" value="1000">
+              </label>
+              <label class="field">随机种子
+                <input id="bootstrap-seed" type="number" value="42">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" type="submit">开始检索</button>
+              <button class="secondary" type="button" id="bootstrap-demo">按数量生成</button>
+              <a class="link-button secondary" href="/monitor.html">查看监控</a>
+            </div>
+            <div id="search-status" class="status"></div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>检索结果</h2>
+          <p id="search-meta" class="hint">执行检索后显示结果。</p>
+          <div id="search-results" class="list">
+            <div class="empty">暂无检索结果</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>添加商品</h2>
+          <form id="add-form">
+            <div class="grid-3">
+              <label class="field">商品名称
+                <input id="product-name" type="text" required placeholder="例如：华为降噪耳机">
+              </label>
+              <label class="field">价格
+                <input id="price" type="number" step="0.01" min="0" required placeholder="899.00">
+              </label>
+              <label class="field">商品 ID
+                <input id="item-id" type="number" min="1" placeholder="自动生成">
+              </label>
+            </div>
+
+            <div class="grid-3">
+              <label class="field">分类编号
+                <input id="category-id" type="number" min="1" placeholder="自动推断">
+              </label>
+              <label class="field">品牌
+                <input id="brand" type="text" placeholder="例如：华为">
+              </label>
+              <label class="field">商品种类
+                <input id="product-type" type="text" placeholder="例如：耳机">
+              </label>
+            </div>
+
+            <div class="grid-3">
+              <label class="field">规格
+                <input id="size" type="text" placeholder="例如：便携款">
+              </label>
+              <label class="field">用途
+                <input id="purpose" type="text" placeholder="例如：通勤">
+              </label>
+              <label class="field">消费群体
+                <input id="target-group" type="text" placeholder="例如：白领">
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label class="field">市场定位
+                <input id="market" type="text" placeholder="例如：中端市场">
+              </label>
+              <label class="field">向量 JSON
+                <input id="embedding" type="text" placeholder="[0.01, 0.02, ...]">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" type="submit">添加商品</button>
+              <button class="secondary" type="button" id="fill-sample">填入示例</button>
+            </div>
+            <div id="add-status" class="status"></div>
+          </form>
+        </section>
+      </div>
+
+      <aside class="stack">
+        <section class="panel">
+          <h2>系统状态</h2>
+          <div id="system-status" class="system-grid">
+            <div class="system-item">
+              <strong>系统状态</strong>
+              正在加载...
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>最新商品</h2>
+          <div id="product-list" class="list">
+            <div class="empty">暂无商品数据</div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || payload.message || "请求失败");
+      return payload;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function setStatus(id, text, type = "") {
+      const el = document.getElementById(id);
+      el.className = `status ${type}`.trim();
+      el.textContent = text;
+    }
+
+    function parseNumberList(text) {
+      const cleaned = text.trim();
+      if (!cleaned) return null;
+      return cleaned
+        .split(",")
+        .map(value => Number(value.trim()))
+        .filter(value => !Number.isNaN(value));
+    }
+
+    function formatPrice(value) {
+      const price = Number(value);
+      return Number.isFinite(price) ? `¥${price.toFixed(2)}` : "-";
+    }
+
+    function renderProducts(items) {
+      const el = document.getElementById("product-list");
+      if (!items.length) {
+        el.innerHTML = `<div class="empty">暂无商品数据</div>`;
+        return;
+      }
+
+      el.innerHTML = items.map(item => `
+        <article class="item-card">
+          <div class="card-head">
+            <div class="card-title">${escapeHtml(item.product_name)}</div>
+            <span class="pill">ID ${escapeHtml(item.item_id)}</span>
+          </div>
+          <div class="meta">
+            <span>分类 ${escapeHtml(item.category_name || item.category_id || "-")}</span>
+            <span>品牌 ${escapeHtml(item.brand || "-")}</span>
+            <span>种类 ${escapeHtml(item.product_type || "-")}</span>
+            <span>用途 ${escapeHtml(item.purpose || "-")}</span>
+            <span>价格 ${formatPrice(item.price)}</span>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderResults(response) {
+      const hits = response.hits || [];
+      const profile = response.query_profile || {};
+      document.getElementById("search-meta").textContent =
+        `模式：${response.mode}，后端：${response.backend}，耗时：${response.latency_ms} ms，识别分类：${profile.category_name || "-"}，返回 ${hits.length} 条结果`;
+
+      const el = document.getElementById("search-results");
+      if (!hits.length) {
+        el.innerHTML = `<div class="empty">没有检索到符合条件的商品</div>`;
+        return;
+      }
+
+      el.innerHTML = hits.map((item, index) => `
+        <article class="item-card">
+          <div class="card-head">
+            <div class="card-title">#${index + 1} ${escapeHtml(item.product_name)}</div>
+            <span class="pill">得分 ${Number(item.match_score ?? item.score ?? 0).toFixed(4)}</span>
+          </div>
+          <div class="meta">
+            <span>ID ${escapeHtml(item.item_id)}</span>
+            <span>分类 ${escapeHtml(item.category_name || item.category_id || "-")}</span>
+            <span>品牌 ${escapeHtml(item.brand || "-")}</span>
+            <span>种类 ${escapeHtml(item.product_type || "-")}</span>
+            <span>价格 ${formatPrice(item.price)}</span>
+            <span>用途 ${escapeHtml(item.purpose || "-")}</span>
+            <span>人群 ${escapeHtml(item.target_group || "-")}</span>
+            <span>市场 ${escapeHtml(item.market || "-")}</span>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function refreshStatus() {
+      const status = await api("/health");
+      document.getElementById("metric-backend").textContent = status.backend || "-";
+      document.getElementById("metric-count").textContent = status.count ?? 0;
+      document.getElementById("metric-dim").textContent = status.vector_dim ?? 128;
+      document.getElementById("metric-health").textContent = status.degraded_reason ? "兼容模式" : "正常";
+
+      document.getElementById("system-status").innerHTML = `
+        <div class="system-item">
+          <strong>当前后端</strong>
+          ${escapeHtml(status.backend || "-")}
+        </div>
+        <div class="system-item">
+          <strong>配置后端</strong>
+          ${escapeHtml(status.configured_backend || "-")}
+        </div>
+        <div class="system-item">
+          <strong>Milvus URI</strong>
+          ${escapeHtml(status.milvus_uri || "-")}
+        </div>
+        <div class="system-item">
+          <strong>商品数量</strong>
+          ${escapeHtml(status.count ?? 0)}
+        </div>
+      `;
+    }
+
+    async function refreshProducts() {
+      const data = await api("/products?limit=10");
+      renderProducts(data.items || []);
+    }
+
+    async function initialize() {
+      await refreshStatus();
+      await refreshProducts();
+    }
+
+    document.getElementById("fill-sample").addEventListener("click", () => {
+      document.getElementById("product-name").value = "华为降噪耳机";
+      document.getElementById("price").value = "899";
+      document.getElementById("item-id").value = "";
+      document.getElementById("category-id").value = "";
+      document.getElementById("brand").value = "华为";
+      document.getElementById("product-type").value = "耳机";
+      document.getElementById("size").value = "便携款";
+      document.getElementById("purpose").value = "通勤";
+      document.getElementById("target-group").value = "白领";
+      document.getElementById("market").value = "中端市场";
+      document.getElementById("embedding").value = "";
+    });
+
+    document.getElementById("search-example").addEventListener("change", event => {
+      if (event.target.value) {
+        document.getElementById("query-text").value = event.target.value;
+      }
+    });
+
+    document.getElementById("bootstrap-demo").addEventListener("click", async () => {
+      setStatus("search-status", "正在启动生成任务...", "");
+      try {
+        const count = Number(document.getElementById("bootstrap-count").value);
+        const seed = Number(document.getElementById("bootstrap-seed").value);
+        const job = await api("/jobs/generate", {
+          method: "POST",
+          body: JSON.stringify({ count, seed, id_start: 1, reset_first: true, batch_size: 500 })
+        });
+        setStatus("search-status", `生成任务已启动：${job.id}。进度可在实时监控页查看。`, "ok");
+        await refreshStatus();
+        await refreshProducts();
+      } catch (error) {
+        setStatus("search-status", error.message, "error");
+      }
+    });
+
+    document.getElementById("add-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      setStatus("add-status", "正在写入商品...", "");
+      try {
+        const payload = {
+          product_name: document.getElementById("product-name").value.trim(),
+          price: Number(document.getElementById("price").value)
+        };
+
+        const optionalFields = [
+          ["item_id", "item-id"],
+          ["category_id", "category-id"],
+          ["brand", "brand"],
+          ["product_type", "product-type"],
+          ["size", "size"],
+          ["purpose", "purpose"],
+          ["target_group", "target-group"],
+          ["market", "market"]
+        ];
+
+        optionalFields.forEach(([key, id]) => {
+          const value = document.getElementById(id).value.trim();
+          if (!value) return;
+          payload[key] = key.includes("id") ? Number(value) : value;
+        });
+
+        const embeddingText = document.getElementById("embedding").value.trim();
+        if (embeddingText) payload.embedding = JSON.parse(embeddingText);
+
+        const result = await api("/products/add", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const generated = result.auto_generated || {};
+        setStatus(
+          "add-status",
+          `写入成功：ID ${generated.item_id}，分类 ${generated.category_name}，向量来源 ${result.embedding_source}。`,
+          "ok"
+        );
+        document.getElementById("query-text").value = payload.product_name;
+        await refreshStatus();
+        await refreshProducts();
+      } catch (error) {
+        setStatus("add-status", error.message, "error");
+      }
+    });
+
+    document.getElementById("search-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      setStatus("search-status", "正在检索...", "");
+      try {
+        const payload = {
+          query_text: document.getElementById("query-text").value.trim(),
+          top_k: Number(document.getElementById("top-k").value),
+          mode: document.getElementById("search-mode").value
+        };
+
+        const categoryIds = parseNumberList(document.getElementById("category-filter").value);
+        const priceRange = parseNumberList(document.getElementById("price-range").value);
+        if (categoryIds?.length) payload.category_ids = categoryIds;
+        if (priceRange?.length >= 1) payload.min_price = priceRange[0];
+        if (priceRange?.length >= 2) payload.max_price = priceRange[1];
+
+        const result = await api("/products/search/by-text", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        renderResults(result);
+        setStatus("search-status", "检索完成。", "ok");
+      } catch (error) {
+        setStatus("search-status", error.message, "error");
+      }
+    });
+
+    initialize().catch(error => {
+      document.getElementById("system-status").innerHTML = `
+        <div class="system-item">
+          <strong>系统状态</strong>
+          ${escapeHtml(error.message)}
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>
